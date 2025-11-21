@@ -278,5 +278,22 @@ contract DeFiBank {
         emit Transfer(msg.sender,to,amount,block.timestamp);
     }
 
+    function getBalance() public view accountExists returns (uint256) {
+        return accounts[msg.sender].balance;
+    }
+
+    function getSavingsBalance() public view accountExists returns (uint256) {
+        Account memory account = accounts[msg.sender];
+
+        if(account.savingsBalance == 0) return 0;
+
+        uint256 timeElapsed = block.timestamp - account.lastInterestCalculation;
+
+        uint256 interest = (account.savingsBalance * savingsInterestRate * timeElapsed) / (365 days *1000);
+
+        return account.savingsBalance + interest;
+    }
+
+    
     
 }
