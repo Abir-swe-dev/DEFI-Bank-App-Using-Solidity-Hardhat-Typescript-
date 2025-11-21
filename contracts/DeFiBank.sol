@@ -294,6 +294,89 @@ contract DeFiBank {
         return account.savingsBalance + interest;
     }
 
+    function getLoan(uint256 loanIndex) public view returns (
+        uint256 amount,
+        uint256 interestRate,
+        uint256 startTime,
+        uint256 duration,
+        bool active,
+        uint256 repaidAmount,
+        uint256 totalDue
+    ) {
+        require(loanIndex < loans[msg.sender].length, "invalid loan index");
+
+        Loan memory loan = loans[msg.sender][loanIndex];
+        uint256 timeElapsed = block.timestamp - loan.startTime;
+        uint256 interest = (loan.amount * loan.interestRate * timeElapsed) / (365 days * 10000);
+
+        uint256 due = loan.amount + interest - loan.repaidAmount;
+
+          return (
+            loan.amount,
+            loan.interestRate,
+            loan.startTime,
+            loan.duration,
+            loan.active,
+            loan.repaidAmount,
+            due
+        );
+    }
+
+    // Get number of loans
+    function getLoanCount() public view returns (uint256) {
+        return loans[msg.sender].length;
+    }
+
+    //Get  transaction History
+    function getTransactionHistory() public view returns(Transaction[] memory) {
+        return transactions[msg.sender];
+    }
+
+    // Get transaction count 
+    function getTransactionCount() public view returns (uint256) {
+        return transactions[msg.sender].length;
+    }
+
+    // Admin functions
+    function setSavingsInterestRate(uint256 rate) public onlyOwner {
+        savingsInterestRate = rate;
+    }
+    
+    function setLoanInterestRate(uint256 rate) public onlyOwner {
+        loanInterestRate = rate;
+    }
+
+    // P2P Lending functions
+
+     function createLoanOffer(
+        uint256 amount,
+        uint256 interestRate,
+        uint256 durationInDays,
+        uint256 minCollateralPercent
+    ) public accountExists {
+        require(amount > 0, "Loan amount must be greater than 0");
+        require(interestRate > 0, "Interest rate must be greater than 0");
+        require(durationInDays > 0, "Duration must be greater than 0");
+        require(accounts[msg.sender].balance >= amount, "Insufficient balance");
+        
+        accounts[msg.sender].balance -= amount;
+        
+        uint256 offerId = nextOfferId++;
+        loanOffers[offerId] = LoanOffer({
+            id: offerId,
+            lender: msg.sender,
+            amount: amount,
+            interestRate: interestRate,
+            durationInDays: durationInDays,
+            minCollateralPercent: minCollateralPercent,
+            active: true,
+            borrower: address(0)
+        });
+        
+        activeLoanOfferIds.push(offerId);
+        emit LoanOfferCreated(offerId, msg.sender, amount, interestRate);
+    }
+
     
     
 }
