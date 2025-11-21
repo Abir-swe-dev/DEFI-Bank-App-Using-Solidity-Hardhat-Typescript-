@@ -377,6 +377,78 @@ contract DeFiBank {
         emit LoanOfferCreated(offerId, msg.sender, amount, interestRate);
     }
 
+    function acceptLoanOffer(uint256 offerId) public accountExists {
+        LoanOffer storage offer = loanOffers[offerId];
+        require(offer.active, "Loan offer is not active");
+        require(offer.lender != msg.sender, "Cannot accept your own loan offer");
+        
+        uint256 requiredCollateral = (offer.amount * offer.minCollateralPercent) / 100;
+        require(accounts[msg.sender].savingsBalance >= requiredCollateral, "Insufficient collateral");
+        
+        offer.active = false;
+        offer.borrower = msg.sender;
+        
+        Loan memory newLoan = Loan({
+            amount: offer.amount,
+            interestRate: offer.interestRate,
+            startTime: block.timestamp,
+            duration: offer.durationInDays * 1 days,
+            active: true,
+            repaidAmount: 0,
+            lender: offer.lender
+        });
+        
+        loans[msg.sender].push(newLoan);
+        accounts[msg.sender].balance += offer.amount;
+        
+        _removeFromActiveLoanOffers(offerId);
+        _addTransaction(offer.lender, msg.sender, offer.amount, "P2P Loan");
+        emit LoanOfferAccepted(offerId, msg.sender);
+    }
     
+    function cancelLoanOffer(uint256 offerId) public accountExists {
+        LoanOffer storage offer = loanOffers[offerId];
+        require(offer.active, "Loan offer is not active");
+        require(offer.lender == msg.sender, "Only lender can cancel");
+        
+        offer.active = false;
+        accounts[msg.sender].balance += offer.amount;
+        
+        _removeFromActiveLoanOffers(offerId);
+        emit LoanOfferCancelled(offerId);
+    }
+    
+    function getActiveLoanOffers() public view returns (LoanOffer[] memory) {
+        LoanOffer[] memory activeOffers = new LoanOffer[](activeLoanOfferIds.length);
+        uint256 count = 0;
+        
+        for (uint256 i = 0; i < activeLoanOfferIds.length; i++) {
+            uint256 offerId = activeLoanOfferIds[i];
+            if (loanOffers[offerId].active) {
+                activeOffers[count] = loanOffers[offerId];
+                count++;
+            }
+        }
+        
+        LoanOffer[] memory result = new LoanOffer[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = activeOffers[i];
+        }
+        
+        return result;
+    }
+    
+    function _removeFromActiveLoanOffers(uint256 offerId) internal {
+        for (uint256 i = 0; i < activeLoanOfferIds.length; i++) {
+            if (activeLoanOfferIds[i] == offerId) {
+                activeLoanOfferIds[i] = activeLoanOfferIds[activeLoanOfferIds.length - 1];
+                activeLoanOfferIds.pop();
+                break;
+            }
+        }
+    }
+    
+    // Fallback function to receive ETH
+    receive() external payable {}
     
 }
