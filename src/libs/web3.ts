@@ -1,27 +1,28 @@
-import {ethers} from 'ethers';
-import DeFiBankABI from "../contracts/defiBank-address.json";
+import { ethers } from "ethers";
+import DeFiBankABI from "../contracts/DeFiBank.json";
 
 let provider: ethers.BrowserProvider | null = null;
 let signer: ethers.Signer | null = null;
 let contract: ethers.Contract | null = null;
 
-const CONTRACT_ADDrESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+// Contract address - update after deployment
+const CONTRACT_ADDRESS = " 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"; // Localhost default
 
 export const initializeWeb3 = async () => {
-    if(typeof (window as any).ethereum !== 'undefined') {
-        try {
-            provider = new ethers.BrowserProvider((window as any).ethereum);
-            signer = await provider.getSigner();
-            contract = new ethers.Contract(CONTRACT_ADDrESS, DeFiBankABI.abi, signer);
-            return {provider, signer, contract};
-        } catch (error) {
-            console.error("Error initializing web3:", error);
-            throw error;
-        }
-    } else {
-        throw new Error("Please Install MetaMask!");
+  if (typeof (window as any).ethereum !== "undefined") {
+    try {
+      provider = new ethers.BrowserProvider((window as any).ethereum);
+      signer = await provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, DeFiBankABI.abi, signer);
+      return { provider, signer, contract };
+    } catch (error) {
+      console.error("Failed to initialize Web3:", error);
+      throw error;
     }
-}
+  } else {
+    throw new Error("Please install MetaMask!");
+  }
+};
 
 export const connectWallet = async () => {
     if(typeof (window as any).ethereum !== 'undefined') {

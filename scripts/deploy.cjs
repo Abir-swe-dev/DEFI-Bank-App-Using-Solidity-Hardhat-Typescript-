@@ -1,29 +1,40 @@
 const hre = require("hardhat");
 
 async function main() {
-    console.log("Deploying DEFI Bank .....");
+  console.log("Deploying DeFiBank contract...");
 
-    const DeFiBank = await hre.ethers.getContractFactory("DeFiBank");
-    const defiBank = await DeFiBank.deploy();
+  const DeFiBank = await hre.ethers.getContractFactory("DeFiBank");
+  const defiBank = await DeFiBank.deploy();
 
-    await defiBank.waitForDeployment();
+  await defiBank.waitForDeployment();
 
-    const address = await defiBank.getAddress();
-    console.log(`DeFiBank deployed to: ${address}`);
+  const address = await defiBank.getAddress();
+  console.log(`DeFiBank deployed to: ${address}`);
 
-    const fs = require('fs');
-    const contractsDir = "./src/contracts";
+  // Save the contract address to a file
+  const fs = require("fs");
+  const contractsDir = "./src/contracts";
 
-    if(!fs.existsSync(contractsDir)){
-        fs.mkdirSync(contractsDir, { recursive: true });
-    }
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir, { recursive: true });
+  }
 
-    fs.writeFileSync(
-        contractsDir + "/defiBank-address.json",
-        JSON.stringify({ DeFiBank: address }, undefined, 2)
-    )
+  fs.writeFileSync(
+    contractsDir + "/contract-address.json",
+    JSON.stringify({ DeFiBank: address }, undefined, 2)
+  );
 
-    console.log("DeFiBank address saved to src/contracts/defiBank-address.json");
+  // Copy the ABI from Hardhat artifacts to src/contracts
+  const artifactPath = "./artifacts/contracts/DeFiBank.sol/DeFiBank.json";
+  const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
+  
+  fs.writeFileSync(
+    contractsDir + "/DeFiBank.json",
+    JSON.stringify({ abi: artifact.abi }, undefined, 2)
+  );
+
+  console.log("Contract address saved to src/contracts/contract-address.json");
+  console.log("Contract ABI saved to src/contracts/DeFiBank.json");
 }
 
 main()
@@ -32,4 +43,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-
