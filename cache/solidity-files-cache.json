@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\D4RK\\Desktop\\New folder\\my-defi-bank\\my-defi-bank\\contracts\\DeFiBank.sol": {
+      "lastModificationDate": 1763729275166,
+      "contentHash": "f23d0d2007bc2c39b0f3581ea8309969",
+      "sourceName": "contracts/DeFiBank.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "DeFiBank"
+      ]
+    }
+  }
+}
