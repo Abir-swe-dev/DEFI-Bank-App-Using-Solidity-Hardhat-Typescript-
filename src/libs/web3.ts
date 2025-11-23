@@ -55,3 +55,57 @@ export const getProvider = () => {
     return provider;
 }
 
+export const getSigner = () => {
+    if(!signer) {
+        throw new Error("Signer is not initialized. Please call initializeWeb3 first.");
+    }
+    return signer;
+}
+
+export const formEther = (value:bigint) => ethers.formatEther(value);
+export const parseEther = (value:string) => ethers.parseEther(value);
+
+
+export const checkAccountExists = async () => {
+  try {
+    const contract = getContract();
+    const account = await contract.accounts(await getSigner().getAddress());
+    return account.exists;
+  } catch (error) {
+    return false;
+  }
+};
+
+
+// Account Operations
+
+export const createAccount = async () => {
+    const contract = getContract();
+    const tx = await contract.createAccount();
+    await tx.wait();
+    return tx;
+}
+
+export const deposit = async (amount:string) => {
+    const contract = getContract();
+    const tx = await contract.deposit({ value: parseEther(amount) });
+    await tx.wait();
+    return tx;
+}
+
+
+export const withdraw = async (amount:string) => {
+    const contract = getContract();
+    const tx = await contract.withdraw(parseEther(amount));
+    await tx.wait();
+    return tx;
+}
+
+export const transfer = async(toAddress: string, amount:string) => {
+    const contract = getContract();
+    const tx = await contract.transfer(toAddress, parseEther(amount));
+    await tx.wait();
+    return tx;
+}
+
+
