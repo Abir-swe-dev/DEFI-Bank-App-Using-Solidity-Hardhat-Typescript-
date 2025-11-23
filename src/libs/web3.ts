@@ -194,3 +194,43 @@ export const getLoanCount = async () => {
 };
 
 
+export const getLoan = async (index: number) => {
+  const contract = getContract();
+  const loan = await contract.getLoan(index);
+  return {
+    amount: formatEther(loan.amount),
+    interestRate:Number(loan.interestRate),
+    startTime: Number(loan.startTime),
+    duration: Number(loan.duration),
+    active: loan.active,
+    repaidAmount: formatEther(loan.repaidAmount),
+    totalDue: formatEther(loan.totalDue)
+  };
+};
+
+export const getActiveLoanOffers = async () => {
+  const contract = getContract();
+  const offers = await contract.getActiveLoanOffers();
+  return offers.map((offer: any) => ({
+    id: Number(offer.id),
+    lender: offer.lender,
+    amount: formatEther(offer.amount),
+    interestRate: Number(offer.interestRate),
+    durationInDays: Number(offer.durationInDays),
+    minCollateralPercent: Number(offer.minCollateralPercent),
+    active: offer.active,
+    borrower: offer.borrower,
+  }));
+};
+
+export const getTransactionHistory = async () => {
+  const contract = getContract();
+  const transactions = await contract.getTransactionHistory();
+  return transactions.map((tx: any) => ({
+    from: tx.from,
+    to: tx.to,
+    amount: formatEther(tx.amount),
+    timestamp: Number(tx.timestamp),
+    transactionType: tx.transactionType,
+  }));
+};
