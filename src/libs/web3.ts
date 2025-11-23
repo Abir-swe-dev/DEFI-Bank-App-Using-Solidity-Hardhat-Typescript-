@@ -62,7 +62,7 @@ export const getSigner = () => {
     return signer;
 }
 
-export const formEther = (value:bigint) => ethers.formatEther(value);
+export const formatEther = (value:bigint) => ethers.formatEther(value);
 export const parseEther = (value:string) => ethers.parseEther(value);
 
 
@@ -107,5 +107,90 @@ export const transfer = async(toAddress: string, amount:string) => {
     await tx.wait();
     return tx;
 }
+
+// Savings Operations
+
+export const depositToSavings = async (amount:string) => {
+    const contract = getContract();
+    const tx = await contract.depositToSavings(parseEther(amount));
+    await tx.wait();
+    return tx;
+}
+
+export const withdrawFromSavings = async (amount:string) => {
+    const contract = getContract();
+    const tx = await contract.withdrawFromSavings(parseEther(amount));
+    await tx.wait();
+    return tx;
+}
+
+
+// Loan Operations
+
+export const takeLoan = async (amount: string, durationInDays: number) => {
+  const contract = getContract();
+  const tx = await contract.takeLoan(parseEther(amount), durationInDays);
+  await tx.wait();
+  return tx;
+};
+
+export const repayLoan = async (loanIndex: number, amount: string) => {
+  const contract = getContract();
+  const tx = await contract.repayLoan(loanIndex, parseEther(amount));
+  await tx.wait();
+  return tx;
+};
+
+// P2P Lending Operations
+
+export const createLoanOffer = async (
+  amount: string,
+  interestRate: number,
+  durationInDays: number,
+  minCollateralRatio: number
+) => {
+  const contract = getContract();
+  const tx = await contract.createLoanOffer(
+    parseEther(amount),
+    interestRate*100,
+    durationInDays,
+    minCollateralRatio
+  );
+  await tx.wait();
+  return tx;
+}
+
+export const acceptLoanOffer = async (offerId:number) => {
+  const contract = getContract();
+  const tx = await contract.acceptLoanOffer(offerId);
+  await tx.wait();
+  return tx;
+}
+
+export const cancelLoanOffer = async (offerId:number) => {
+  const contract = getContract();
+  const tx = await contract.cancelLoanOffer(offerId);
+  await tx.wait();
+  return tx;
+}
+
+// View Functions
+export const getBalance = async () => {
+  const contract = getContract();
+  const balance = await contract.getBalance();
+  return formatEther(balance);
+};
+
+export const getSavingsBalance = async () => {
+  const contract = getContract();
+  const balance = await contract.getSavingsBalance();
+  return formatEther(balance);
+};
+
+export const getLoanCount = async () => {
+  const contract = getContract();
+  const count = await contract.getLoanCount();
+  return Number(count);
+};
 
 
