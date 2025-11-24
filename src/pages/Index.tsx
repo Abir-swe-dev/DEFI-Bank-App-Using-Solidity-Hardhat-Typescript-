@@ -10,7 +10,6 @@ import Navbar from "@/components/Navbar";
 // import P2PLending from "@/components/P2PLending";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { createAccount, checkAccountExists } from "@/lib/web3";
 import { toast } from "sonner";
 import { 
   LayoutDashboard, 
@@ -24,48 +23,6 @@ import {
 
 const Index = () => {
   const { isConnected } = useWeb3();
-  const [hasAccount, setHasAccount] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [checkingAccount, setCheckingAccount] = useState(true);
-
-  useEffect(() => {
-    if (isConnected) {
-      checkAccount();
-    } else {
-      setCheckingAccount(false);
-    }
-  }, [isConnected]);
-
-  const checkAccount = async () => {
-    setCheckingAccount(true);
-    try {
-      const exists = await checkAccountExists();
-      setHasAccount(exists);
-    } catch (error) {
-      console.error("Error checking account:", error);
-    } finally {
-      setCheckingAccount(false);
-    }
-  };
-
-  const handleCreateAccount = async () => {
-    setLoading(true);
-    try {
-      await createAccount();
-      setHasAccount(true);
-      toast.success("Account created successfully!");
-    } catch (error: any) {
-      console.error("Failed to create account:", error);
-      if (error.message.includes("Account already exists")) {
-        setHasAccount(true);
-        toast.info("Account already exists");
-      } else {
-        toast.error(error.message || "Failed to create account");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (!isConnected) {
     return (
@@ -83,49 +40,6 @@ const Index = () => {
             <p className="text-sm text-muted-foreground">
               Please connect your MetaMask wallet to continue
             </p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (checkingAccount) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
-              <Wallet className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <p className="text-lg text-muted-foreground">Checking account status...</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (!hasAccount) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Wallet className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <h1 className="text-4xl font-bold text-foreground mb-4">Create Your Account</h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Set up your DeFi Bank account to start managing your finances
-            </p>
-            <Button 
-              onClick={handleCreateAccount} 
-              disabled={loading}
-              size="lg"
-              className="px-8"
-            >
-              {loading ? "Creating Account..." : "Create Account"}
-            </Button>
           </div>
         </div>
       </>

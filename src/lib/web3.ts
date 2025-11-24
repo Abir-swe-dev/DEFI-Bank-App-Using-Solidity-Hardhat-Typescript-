@@ -6,7 +6,7 @@ let signer: ethers.Signer | null = null;
 let contract: ethers.Contract | null = null;
 
 // Contract address - update after deployment
-const CONTRACT_ADDRESS = " 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"; // Localhost default
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Localhost default
 
 export const initializeWeb3 = async () => {
   if (typeof (window as any).ethereum !== "undefined") {
@@ -66,33 +66,12 @@ export const formatEther = (value:bigint) => ethers.formatEther(value);
 export const parseEther = (value:string) => ethers.parseEther(value);
 
 
-export const checkAccountExists = async () => {
-  try {
-    const contract = getContract();
-    const account = await contract.accounts(await getSigner().getAddress());
-    return account.exists;
-  } catch (error) {
-    return false;
-  }
-};
-
-
-// Account Operations
-
-export const createAccount = async () => {
-    const contract = getContract();
-    const tx = await contract.createAccount();
-    await tx.wait();
-    return tx;
-}
-
 export const deposit = async (amount:string) => {
     const contract = getContract();
     const tx = await contract.deposit({ value: parseEther(amount) });
     await tx.wait();
     return tx;
 }
-
 
 export const withdraw = async (amount:string) => {
     const contract = getContract();
@@ -124,7 +103,6 @@ export const withdrawFromSavings = async (amount:string) => {
     return tx;
 }
 
-
 // Loan Operations
 
 export const takeLoan = async (amount: string, durationInDays: number) => {
@@ -152,7 +130,7 @@ export const createLoanOffer = async (
   const contract = getContract();
   const tx = await contract.createLoanOffer(
     parseEther(amount),
-    interestRate*100,
+    interestRate * 100, // Convert percentage to basis points
     durationInDays,
     minCollateralRatio
   );
@@ -193,13 +171,12 @@ export const getLoanCount = async () => {
   return Number(count);
 };
 
-
 export const getLoan = async (index: number) => {
   const contract = getContract();
   const loan = await contract.getLoan(index);
   return {
     amount: formatEther(loan.amount),
-    interestRate:Number(loan.interestRate),
+    interestRate: Number(loan.interestRate),
     startTime: Number(loan.startTime),
     duration: Number(loan.duration),
     active: loan.active,

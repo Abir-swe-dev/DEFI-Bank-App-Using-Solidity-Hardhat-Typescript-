@@ -371,13 +371,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "createAccount",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "uint256",

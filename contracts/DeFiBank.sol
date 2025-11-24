@@ -2,6 +2,14 @@
 pragma solidity ^0.8.0;
 
 contract DeFiBank {
+    // State variables
+    address public owner;
+    uint256 public totalDeposits;
+    uint256 public totalLoans;
+    
+    // Interest rates (in basis points, 1% = 100)
+    uint256 public savingsInterestRate = 500; // 5% APY
+    uint256 public loanInterestRate = 800; // 8% APY
     
     // Structs
     struct Account {
@@ -40,15 +48,6 @@ contract DeFiBank {
         bool active;
         address borrower;
     }
-
-        // State variables
-    address public owner;
-    uint256 public totalDeposits;
-    uint256 public totalLoans;
-    
-    // Interest rates (in basis points, 1% = 100)
-    uint256 public savingsInterestRate = 500; // 5% APY
-    uint256 public loanInterestRate = 800; // 8% APY
     
     // Mappings
     mapping(address => Account) public accounts;
@@ -77,19 +76,10 @@ contract DeFiBank {
         _;
     }
     
-    modifier accountExists() {
-        require(accounts[msg.sender].exists, "Account does not exist");
-        _;
-    }
-    
     constructor() {
         owner = msg.sender;
-    }
-    
-    // Create account
-    function createAccount() public {
-        require(!accounts[msg.sender].exists, "Account already exists");
-        accounts[msg.sender] = Account({
+        // Create account for the owner
+        accounts[owner] = Account({
             balance: 0,
             savingsBalance: 0,
             savingsStartTime: 0,
@@ -97,27 +87,23 @@ contract DeFiBank {
             exists: true
         });
     }
-
-
-    // Add transaction to history
-
-    function _addTransaction(address from, address to, uint256 amount, string memory transactionType) internal {
-        Transaction memory newTransaction = Transaction({
-            from:from,
-            to:to,
-            amount:amount,
-            timestamp: block.timestamp,
-            transactionType: transactionType
-        });
-
-        transactions[from].push(newTransaction);
-        if( from!= to) {
-            transactions[to].push(newTransaction);
+    
+    // Internal function to ensure account exists
+    function _ensureAccountExists(address user) internal {
+        if (!accounts[user].exists) {
+            accounts[user] = Account({
+                balance: 0,
+                savingsBalance: 0,
+                savingsStartTime: 0,
+                lastInterestCalculation: block.timestamp,
+                exists: true
+            });
         }
     }
     
     // Deposit funds
-    function deposit() public payable accountExists {
+    function deposit() public payable {
+        _ensureAccountExists(msg.sender);
         require(msg.value > 0, "Deposit amount must be greater than 0");
         
         accounts[msg.sender].balance += msg.value;
@@ -128,7 +114,8 @@ contract DeFiBank {
     }
     
     // Withdraw funds
-    function withdraw(uint256 amount) public accountExists {
+    function withdraw(uint256 amount) public {
+        _ensureAccountExists(msg.sender);
         require(amount > 0, "Withdrawal amount must be greater than 0");
         require(accounts[msg.sender].balance >= amount, "Insufficient balance");
         
@@ -142,7 +129,8 @@ contract DeFiBank {
     }
     
     // Deposit to savings
-    function depositToSavings(uint256 amount) public accountExists {
+    function depositToSavings(uint256 amount) public {
+        _ensureAccountExists(msg.sender);
         require(amount > 0, "Amount must be greater than 0");
         require(accounts[msg.sender].balance >= amount, "Insufficient balance");
         
@@ -165,7 +153,8 @@ contract DeFiBank {
     }
     
     // Withdraw from savings
-    function withdrawFromSavings(uint256 amount) public accountExists {
+    function withdrawFromSavings(uint256 amount) public {
+        _ensureAccountExists(msg.sender);
         require(amount > 0, "Amount must be greater than 0");
         require(accounts[msg.sender].savingsBalance >= amount, "Insufficient savings balance");
         
@@ -203,7 +192,8 @@ contract DeFiBank {
     }
     
     // Take a loan
-    function takeLoan(uint256 amount, uint256 durationInDays) public accountExists {
+    function takeLoan(uint256 amount, uint256 durationInDays) public {
+        _ensureAccountExists(msg.sender);
         require(amount > 0, "Loan amount must be greater than 0");
         require(durationInDays > 0, "Duration must be greater than 0");
         require(address(this).balance >= amount, "Insufficient contract balance");
@@ -229,71 +219,102 @@ contract DeFiBank {
         _addTransaction(address(this), msg.sender, amount, "Loan");
         emit LoanTaken(msg.sender, amount, durationInDays, block.timestamp);
     }
-
-    function repayLoan(uint256 loanIndex, uint256 amount) public accountExists {
+    
+    // Repay loan
+    function repayLoan(uint256 loanIndex, uint256 amount) public {
+        _ensureAccountExists(msg.sender);
         require(loanIndex < loans[msg.sender].length, "Invalid loan index");
-        require(loans[msg.sender][loanIndex].active,"Loan is not active");
+        require(loans[msg.sender][loanIndex].active, "Loan is not active");
         require(amount > 0, "Repayment amount must be greater than 0");
-        require(accounts[msg.sender].balance >= amount,"Insufficient balance");
-
+        require(accounts[msg.sender].balance >= amount, "Insufficient balance");
+        
         Loan storage loan = loans[msg.sender][loanIndex];
-
-         // Calculate total amount due with interest
+        
+        // Calculate total amount due with interest
         uint256 timeElapsed = block.timestamp - loan.startTime;
         uint256 interest = (loan.amount * loan.interestRate * timeElapsed) / (365 days * 10000);
         uint256 totalDue = loan.amount + interest - loan.repaidAmount;
-
-        require(amount<= totalDue,"Repayment exceeds loan amount");
-
+        
+        require(amount <= totalDue, "Repayment exceeds loan amount");
+        
         accounts[msg.sender].balance -= amount;
         loan.repaidAmount += amount;
-
-        if(loan.repaidAmount >= loan.amount + interest) {
+        
+        // Check if loan is fully repaid
+        if (loan.repaidAmount >= loan.amount + interest) {
             loan.active = false;
-            if(loan.lender == address(0)) {
+            if (loan.lender == address(0)) {
+                // Bank loan - reduce total loans
                 totalLoans -= loan.amount;
             }
         }
-
-        if(loan.lender != address(0)) {
+        
+        // Return funds to lender (for P2P loans) or contract (for bank loans)
+        if (loan.lender != address(0)) {
+            _ensureAccountExists(loan.lender);
             accounts[loan.lender].balance += amount;
             _addTransaction(msg.sender, loan.lender, amount, "P2P Loan Repayment");
         } else {
             _addTransaction(msg.sender, address(this), amount, "Loan Repayment");
         }
-
-        emit LoanRepaid(msg.sender,loanIndex,amount,block.timestamp);
+        
+        emit LoanRepaid(msg.sender, loanIndex, amount, block.timestamp);
     }
-
-    function transfer(address to, uint256 amount) public accountExists {
+    
+    // Transfer funds to another account
+    function transfer(address to, uint256 amount) public {
+        _ensureAccountExists(msg.sender);
         require(to != address(0), "Invalid recipient address");
-        require(accounts[to].exists,"Receipent account does not exist");
-        require(amount > 0,"Transfer amount must be greater than 0");
-        require(accounts[msg.sender].balance >= amount,"Insufficient balance");
-
+        require(amount > 0, "Transfer amount must be greater than 0");
+        require(accounts[msg.sender].balance >= amount, "Insufficient balance");
+        
+        // Ensure recipient account exists
+        _ensureAccountExists(to);
+        
         accounts[msg.sender].balance -= amount;
         accounts[to].balance += amount;
-
+        
         _addTransaction(msg.sender, to, amount, "Transfer");
-        emit Transfer(msg.sender,to,amount,block.timestamp);
+        emit Transfer(msg.sender, to, amount, block.timestamp);
     }
-
-    function getBalance() public view accountExists returns (uint256) {
+    
+    // Add transaction to history
+    function _addTransaction(address from, address to, uint256 amount, string memory transactionType) internal {
+        Transaction memory newTransaction = Transaction({
+            from: from,
+            to: to,
+            amount: amount,
+            timestamp: block.timestamp,
+            transactionType: transactionType
+        });
+        
+        transactions[from].push(newTransaction);
+        if (from != to) {
+            transactions[to].push(newTransaction);
+        }
+    }
+    
+    // Get account balance
+    function getBalance() public view returns (uint256) {
+        if (!accounts[msg.sender].exists) return 0;
         return accounts[msg.sender].balance;
     }
-
-    function getSavingsBalance() public view accountExists returns (uint256) {
+    
+    // Get savings balance with accrued interest
+    function getSavingsBalance() public view returns (uint256) {
+        if (!accounts[msg.sender].exists) return 0;
+        
         Account memory account = accounts[msg.sender];
-
-        if(account.savingsBalance == 0) return 0;
-
+        
+        if (account.savingsBalance == 0) return 0;
+        
         uint256 timeElapsed = block.timestamp - account.lastInterestCalculation;
-
-        uint256 interest = (account.savingsBalance * savingsInterestRate * timeElapsed) / (365 days *1000);
-
+        uint256 interest = (account.savingsBalance * savingsInterestRate * timeElapsed) / (365 days * 10000);
+        
         return account.savingsBalance + interest;
     }
-
+    
+    // Get loan details
     function getLoan(uint256 loanIndex) public view returns (
         uint256 amount,
         uint256 interestRate,
@@ -303,15 +324,16 @@ contract DeFiBank {
         uint256 repaidAmount,
         uint256 totalDue
     ) {
-        require(loanIndex < loans[msg.sender].length, "invalid loan index");
-
+        if (!accounts[msg.sender].exists || loanIndex >= loans[msg.sender].length) {
+            return (0, 0, 0, 0, false, 0, 0);
+        }
+        
         Loan memory loan = loans[msg.sender][loanIndex];
         uint256 timeElapsed = block.timestamp - loan.startTime;
         uint256 interest = (loan.amount * loan.interestRate * timeElapsed) / (365 days * 10000);
-
         uint256 due = loan.amount + interest - loan.repaidAmount;
-
-          return (
+        
+        return (
             loan.amount,
             loan.interestRate,
             loan.startTime,
@@ -321,22 +343,27 @@ contract DeFiBank {
             due
         );
     }
-
+    
     // Get number of loans
     function getLoanCount() public view returns (uint256) {
+        if (!accounts[msg.sender].exists) return 0;
         return loans[msg.sender].length;
     }
-
-    //Get  transaction History
-    function getTransactionHistory() public view returns(Transaction[] memory) {
+    
+    // Get transaction history
+    function getTransactionHistory() public view returns (Transaction[] memory) {
+        if (!accounts[msg.sender].exists) {
+            return new Transaction[](0);
+        }
         return transactions[msg.sender];
     }
-
-    // Get transaction count 
+    
+    // Get transaction count
     function getTransactionCount() public view returns (uint256) {
+        if (!accounts[msg.sender].exists) return 0;
         return transactions[msg.sender].length;
     }
-
+    
     // Admin functions
     function setSavingsInterestRate(uint256 rate) public onlyOwner {
         savingsInterestRate = rate;
@@ -345,15 +372,15 @@ contract DeFiBank {
     function setLoanInterestRate(uint256 rate) public onlyOwner {
         loanInterestRate = rate;
     }
-
+    
     // P2P Lending functions
-
-     function createLoanOffer(
+    function createLoanOffer(
         uint256 amount,
         uint256 interestRate,
         uint256 durationInDays,
         uint256 minCollateralPercent
-    ) public accountExists {
+    ) public {
+        _ensureAccountExists(msg.sender);
         require(amount > 0, "Loan amount must be greater than 0");
         require(interestRate > 0, "Interest rate must be greater than 0");
         require(durationInDays > 0, "Duration must be greater than 0");
@@ -376,8 +403,9 @@ contract DeFiBank {
         activeLoanOfferIds.push(offerId);
         emit LoanOfferCreated(offerId, msg.sender, amount, interestRate);
     }
-
-    function acceptLoanOffer(uint256 offerId) public accountExists {
+    
+    function acceptLoanOffer(uint256 offerId) public {
+        _ensureAccountExists(msg.sender);
         LoanOffer storage offer = loanOffers[offerId];
         require(offer.active, "Loan offer is not active");
         require(offer.lender != msg.sender, "Cannot accept your own loan offer");
@@ -406,7 +434,8 @@ contract DeFiBank {
         emit LoanOfferAccepted(offerId, msg.sender);
     }
     
-    function cancelLoanOffer(uint256 offerId) public accountExists {
+    function cancelLoanOffer(uint256 offerId) public {
+        _ensureAccountExists(msg.sender);
         LoanOffer storage offer = loanOffers[offerId];
         require(offer.active, "Loan offer is not active");
         require(offer.lender == msg.sender, "Only lender can cancel");
@@ -450,5 +479,4 @@ contract DeFiBank {
     
     // Fallback function to receive ETH
     receive() external payable {}
-    
 }
