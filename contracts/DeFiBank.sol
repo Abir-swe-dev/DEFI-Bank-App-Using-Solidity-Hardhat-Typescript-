@@ -2,14 +2,7 @@
 pragma solidity ^0.8.0;
 
 contract DeFiBank {
-    // State variables
-    address public owner;
-    uint256 public totalDeposits;
-    uint256 public totalLoans;
-    
-    // Interest rates (in basis points, 1% = 100)
-    uint256 public savingsInterestRate = 500; // 5% APY
-    uint256 public loanInterestRate = 800; // 8% APY
+   
     
     // Structs
     struct Account {
@@ -48,6 +41,17 @@ contract DeFiBank {
         bool active;
         address borrower;
     }
+
+     // State variables
+     
+    address public owner;
+    uint256 public totalDeposits;
+    uint256 public totalLoans;
+    
+    // Interest rates (in basis points, 1% = 100)
+
+    uint256 public savingsInterestRate = 500; // 5% APY
+    uint256 public loanInterestRate = 800; // 8% APY
     
     // Mappings
     mapping(address => Account) public accounts;
