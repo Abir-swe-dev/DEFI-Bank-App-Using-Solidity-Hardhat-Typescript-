@@ -18,7 +18,7 @@ const Navbar = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">DeFi Bank</h1>
-            <p className="text-xs text-muted-foreground">Your Decentralized Banking Solution</p>
+            <p className="text-xs text-muted-foreground">Decentralized Banking Solution</p>
           </div>
         </div>
         

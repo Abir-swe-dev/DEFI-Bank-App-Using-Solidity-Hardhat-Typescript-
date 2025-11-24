@@ -35,7 +35,7 @@ const Index = () => {
             </div>
             <h1 className="text-4xl font-bold text-foreground mb-4">Welcome to DeFi Bank</h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Connect your wallet to access decentralized banking services
+              Connect wallet to access decentralized banking services
             </p>
             <p className="text-sm text-muted-foreground">
               Please connect your MetaMask wallet to continue

@@ -14,9 +14,24 @@ const Web3Context = createContext<Web3ContextType | undefined>(undefined);
 export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     checkConnection();
+    
+    // Setup event listeners for account changes
+    if (typeof (window as any).ethereum !== "undefined") {
+      (window as any).ethereum.on("accountsChanged", handleAccountsChanged);
+      (window as any).ethereum.on("chainChanged", handleChainChanged);
+    }
+    
+    return () => {
+      // Cleanup event listeners
+      if (typeof (window as any).ethereum !== "undefined") {
+        (window as any).ethereum.removeListener("accountsChanged", handleAccountsChanged);
+        (window as any).ethereum.removeListener("chainChanged", handleChainChanged);
+      }
+    };
   }, []);
 
   const checkConnection = async () => {
@@ -27,11 +42,32 @@ export const Web3Provider: React.FC<{ children: React.ReactNode }> = ({ children
           await initializeWeb3();
           setAccount(accounts[0]);
           setIsConnected(true);
+          setIsInitialized(true);
         }
       } catch (error) {
         console.error("Error checking connection:", error);
+      } finally {
+        setIsInitialized(true);
       }
+    } else {
+      setIsInitialized(true);
     }
+  };
+
+  const handleAccountsChanged = (accounts: string[]) => {
+    if (accounts.length === 0) {
+      // User disconnected
+      disconnect();
+    } else {
+      // Account changed
+      setAccount(accounts[0]);
+      setIsConnected(true);
+    }
+  };
+
+  const handleChainChanged = () => {
+    // Reload the page when chain changes as recommended by MetaMask
+    window.location.reload();
   };
 
   const connect = async () => {
