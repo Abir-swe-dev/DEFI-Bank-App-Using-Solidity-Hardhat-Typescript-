@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useWeb3 } from "@/contexts/Web3Context";
 import Navbar from "@/components/Navbar";
 import Dashboard from "@/components/Dashboard";
-// import DepositWithdraw from "@/components/DepositWithdraw";
+import DepositWithdraw from "@/components/DepositWithdraw";
 // import Savings from "@/components/Savings";
 // import Loans from "@/components/Loans";
 // import Transactions from "@/components/Transactions";
@@ -86,11 +86,11 @@ const Index = () => {
             <Dashboard />
           </TabsContent>
 
-          {/* <TabsContent value="deposit-withdraw">
+          <TabsContent value="deposit-withdraw">
             <DepositWithdraw />
           </TabsContent>
 
-          <TabsContent value="savings">
+          {/* <TabsContent value="savings">
             <Savings />
           </TabsContent>
 
@@ -108,7 +108,7 @@ const Index = () => {
 
           <TabsContent value="transactions">
             <Transactions />
-          </TabsContent> */}
+          </TabsContent>  */}
         </Tabs>
       </div>
     </div>
