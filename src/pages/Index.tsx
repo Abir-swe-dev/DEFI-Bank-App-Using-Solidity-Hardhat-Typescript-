@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useWeb3 } from "@/contexts/Web3Context";
 import Navbar from "@/components/Navbar";
-// import Dashboard from "@/components/Dashboard";
+import Dashboard from "@/components/Dashboard";
 // import DepositWithdraw from "@/components/DepositWithdraw";
 // import Savings from "@/components/Savings";
 // import Loans from "@/components/Loans";
@@ -82,9 +82,9 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* <TabsContent value="dashboard">
+          <TabsContent value="dashboard">
             <Dashboard />
-          </TabsContent> */}
+          </TabsContent>
 
           {/* <TabsContent value="deposit-withdraw">
             <DepositWithdraw />
